@@ -4,7 +4,7 @@ Bridge providing an MQTT interface to Tailwind iQ3 Smart Garage Opener
 
 # IMPORTANT:  THIS BRIDGE IS STILL IN ALPHA
 
-## Frequent and significant changes are expected that may break existing installs
+## Frequent and significant changes are expected that may break prior bridge installs
 
 ### Your Tailwind device must be running the beta firmware v9.87 or later
 
