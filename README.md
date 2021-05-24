@@ -2,11 +2,12 @@
 
 Bridge providing MQTT interface to Tailwind iQ3 Smart Garage Opener
 
-# IMPORTANT:  THIS BRIDGE IS STILL CONSIDERED IN ALPHA
+# IMPORTANT:  THIS BRIDGE IS STILL IN ALPHA
 
 ## Frequent and significant changes are expected that may break existing installs
-### Full security and testing has not occurred.  Use at your own risk.
 
-#### Do not rely solely on this bridge for your garage door control.  Use care in automations to avoid unplanned door openings.
+### Your Tailwind device must be running the beta firmware v9.87 or later
+
+#### Full security and testing has not occurred.  Use at your own risk. Do not rely solely on this bridge for your garage door control.  Use care in automations to avoid unplanned door openings.
 
 This bridge is not officially endorsed nor supported by Tailwind.
