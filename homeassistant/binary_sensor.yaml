@@ -6,19 +6,19 @@
 # Change the MQTT_TOPIC_PUB to match your setting on bridge
 - platform: mqtt
   name: Tailwind Garage Door 1
-  state_topic: "stat/tailwind/door1/state"
+  state_topic: "MQTT_TOPIC_PUB/door1/state"
   payload_on: 'on'
   payload_off: 'off'
   device_class: garage_door
 - platform: mqtt
   name: Tailwind Garage Door 2
-  state_topic: "stat/tailwind/door2/state"
+  state_topic: "MQTT_TOPIC_PUB/door2/state"
   payload_on: 'on'
   payload_off: 'off'
   device_class: garage_door
 - platform: mqtt
   name: Tailwind Garage Door 3
-  state_topic: "stat/tailwind/door3/state"
+  state_topic: "MQTT_TOPIC_PUB/door3/state"
   payload_on: 'on'
   payload_off: 'off'
   device_class: garage_door
