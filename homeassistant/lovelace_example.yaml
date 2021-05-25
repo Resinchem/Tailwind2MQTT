@@ -1,0 +1,45 @@
+# ===================================
+# Sample Lovelace Example
+# ===================================
+# This example makes use of two custom components
+# Text-divider-row and button-card
+# Both are available via HACS, but are not required to use
+# the MQTT bridge.
+
+  - text: Tailwind Door Control
+    type: 'custom:text-divider-row'
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:button-card'
+        aspect_ratio: 2/1
+        color: 'rgb(0,255,0)'
+        color_type: icon
+        entity: binary_sensor.tailwind_garage_door
+        name: Garage Door
+        show_name: false
+        show_state: true
+        state:
+          - color: 'rgb(255,0,0)'
+            icon: 'mdi:garage'
+            value: 'off'
+          - color: 'rgb(0,255,0)'
+            icon: 'mdi:garage-open'
+            styles:
+              icon:
+                - animation: blink 2s ease infinite
+                  value: 'on'
+        tap_action:
+          action: call-service
+          service: script.tailwind_toggle_door
+      - type: entities
+        entities:
+          - entity: sensor.tailwind_bridge_mqtt
+            name: MQTT
+            icon: 'mdi:transit-connection-variant'
+          - entity: sensor.tailwind_last_command
+            name: Last Command
+            icon: 'mdi:check'
+          - entity: sensor.tailwind_last_status_code
+            name: Status Code
+            icon: 'mdi:numeric'
+

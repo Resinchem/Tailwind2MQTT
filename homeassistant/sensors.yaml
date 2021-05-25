@@ -1,0 +1,22 @@
+# ===================================
+# Tailwind Sensors
+# ===================================
+# These are optional. You only need to define if you 
+# wish to use them in Home Assistant.
+# Change the MQTT_TOPIC_PUB to match your setting on bridge
+
+# Show MQTT connection status
+- platform: mqtt
+  name: Tailwind Bridge MQTT
+  state_topic: "MQTT_TOPIC_PUB/mqtt"
+
+# Show result of last command issued (OK, FAILED or INVALID)
+- platform: mqtt
+  name: Tailwind Last Command
+  state_topic: "MQTT_TOPIC_PUB/lastresult"
+
+# Raw status code returned by API (0-7)
+- platform: mqtt
+  name: Tailwind Last Status Code
+  state_topic: "MQTT_TOPIC_PUB/statuscode"
+

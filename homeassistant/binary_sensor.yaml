@@ -1,0 +1,25 @@
+# ===================================
+# Tailwind Door State
+# ===================================
+# You only need to define the sensors to match
+# the number of doors in your install.
+# Change the MQTT_TOPIC_PUB to match your setting on bridge
+- platform: mqtt
+  name: Tailwind Garage Door 1
+  state_topic: "stat/tailwind/door1/state"
+  payload_on: 'on'
+  payload_off: 'off'
+  device_class: garage_door
+- platform: mqtt
+  name: Tailwind Garage Door 2
+  state_topic: "stat/tailwind/door2/state"
+  payload_on: 'on'
+  payload_off: 'off'
+  device_class: garage_door
+- platform: mqtt
+  name: Tailwind Garage Door 3
+  state_topic: "stat/tailwind/door3/state"
+  payload_on: 'on'
+  payload_off: 'off'
+  device_class: garage_door
+

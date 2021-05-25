@@ -1,0 +1,28 @@
+# ===================================
+# Tailwind Control
+# ===================================
+# These are sample scripts.  You will need to update
+# to match your setttings.
+# Update 'MQTT_TOPIC_SUB' to match the bridge setting
+tailwind_open_door:
+  alias: Open Tailwind Door
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "MQTT_TOPIC_SUB/opendoor" #Update to match bridge setting 
+        payload: 1                       #Payload 1-3 to open doors 1-3
+tailwind_close_door:
+  alias: close Tailwind Door
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "MQTT_TOPIC_SUB/closedoor" #Update to match bridge setting 
+        payload: 1                        #Payload 1-3 to open doors 1-3
+tailwind_toggle_door:
+  alias: Toggle Tailwind Door
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "MQTT_TOPIC_SUB/toggledoor" #Update to match bridge setting 
+        payload: 1                        #Payload 1-3 to open doors 1-3
+
