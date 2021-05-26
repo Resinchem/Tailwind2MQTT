@@ -16,3 +16,4 @@ bool ota_flag = true;                    // Must leave this as true for board to
 uint16_t ota_boot_time_window = 2500;    // minimum time on boot for IP address to show in IDE ports, in millisecs
 uint16_t ota_time_window = 20000;        // time to start file upload when ota_flag set to true (after initial boot), in millsecs
 uint16_t tailwind_poll = 10000;          // How often (in millis) to poll Tailwind for status- DO NOT SET TO LESS THAN 1000, 5000 or higher recommended
+bool ha_discovery = true;                // Use Home Assistant MQTT Discovery to automatically create all sensors

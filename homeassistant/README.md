@@ -2,6 +2,19 @@
 
 These files are provided as examples on how to issue commands and create state sensors.
 
+### If you have enabled Home Assistant MQTT Discovery in the settings, you do not need to create the sensors!
+MQTT Discovery will automatically create the following sensors in your Home Assistant upon boot of the bridge:
+Entity Name|Reported Values|
+-----------|---------------|
+```binary_sensor.tailwind_door1```|Open or Closed|
+```binary_sensor.tailwind_door2```|Open or Closed|
+```binary_sensor.tailwind_door3```|Open or Closed|
+```sensor.tailwind_mqtt_status```|'connected' if connected to MQTT|
+```sensor.tailwind_last_status```|OK, FAILED or INVALID|
+```sensor.tailwind_last_result```|0-7 - Last status code from API|
+
+See the [Wiki](https://github.com/Resinchem/Tailwind2MQTT/wiki/MQTT-%5C-Home-Assistant) for more info on MQTT payloads.
+
 **Be sure to update the MQTT topics in these samples:**
 
 Replace ```MQTT_TOPIC_PUB``` and ```MQTT_TOPIC_SUB``` with the topics you defined in the Settings.h files.

@@ -1,6 +1,6 @@
 /*
  * Tailwind MQTT Control and Status
- * Alpha v0.42 - Moved ota_time_elaspsed from Settings to main .ino
+ * Alpha v0.43 - Added Home Assistant MQTT Discovery
  */
 
 #include <ESP8266WiFi.h>
@@ -10,6 +10,7 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <PubSubClient.h>
+#include <ArduinoJson.h>          //NEW for v0.43
 #include <FS.h>
 #include "Credentials.h"          //File must exist in same folder as .ino.  Edit as needed for project
 #include "Settings.h"             //File must exist in same folder as .ino.  Edit as needed for project
@@ -47,6 +48,9 @@ PubSubClient client(espClient);
 ESP8266WebServer server;
 HTTPClient http;
 
+//------------------------------
+// Setup WIFI
+//-------------------------------
 void setup_wifi() {
   WiFi.setSleepMode(WIFI_NONE_SLEEP);  //Disable WiFi Sleep
   delay(200);
@@ -77,8 +81,11 @@ void setup_wifi() {
   IPAddress ip = WiFi.localIP();
   Serial.println(WiFi.localIP());
 #endif   
-}
+};
 
+//------------------------------
+// Setup MQTT
+//-------------------------------
 void setup_mqtt() {
 #if defined(MQTTMODE) && (MQTTMODE == 1 && (WIFIMODE == 1 || WIFIMODE == 2))
   byte mcount = 0;
@@ -207,7 +214,73 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   return;
 };
+//-------------------------------
+// Home Assistant MQTT Discovery
+//-------------------------------
+void setup_ha_discovery() {
+  if (ha_discovery) {
+    char buffer[256];
+    char buffer2[256];
+    char buffer3[256];
+    char bufferm[256];
+    char bufferl[256];
+    char buffers[256];
+    StaticJsonDocument<200> doc;
+    // Door binary sensor states
+    doc["name"] = "tailwind_door1";
+    doc["device_class"] = "garage_door";
+    doc["state_topic"] = MQTT_TOPIC_PUB"/door1/state";
+    serializeJson(doc, buffer);
+    client.publish("homeassistant/binary_sensor/tailwind_door1/config", buffer, true);
 
+    doc.clear();
+    doc["name"] = "tailwind_door2";
+    doc["device_class"] = "garage_door";
+    doc["state_topic"] = MQTT_TOPIC_PUB"/door2/state";
+    serializeJson(doc, buffer2);
+    client.publish("homeassistant/binary_sensor/tailwind_door2/config", buffer2, true);
+
+    doc.clear();
+    doc["name"] = "tailwind_door3";
+    doc["device_class"] = "garage_door";
+    doc["state_topic"] = MQTT_TOPIC_PUB"/door3/state";
+    serializeJson(doc, buffer3);
+    client.publish("homeassistant/binary_sensor/tailwind_door3/config", buffer3, true);
+
+    //Other sensors
+    //mqtt connection status
+    doc.clear();
+    doc["name"] = "tailwind_mqtt_status";
+    doc["state_topic"] = MQTT_TOPIC_PUB"/mqtt";
+    serializeJson(doc, bufferm);
+    client.publish("homeassistant/sensor/tailwind_mqtt/config", bufferm, true);
+
+    //lastcommand result
+    doc.clear();
+    doc["name"] = "tailwind_last_result";
+    doc["state_topic"] = MQTT_TOPIC_PUB"/lastresult";
+    serializeJson(doc, bufferl);
+    client.publish("homeassistant/sensor/tailwind_lastresult/config", bufferl, true);
+
+    //status code result
+    doc.clear();
+    doc["name"] = "tailwind_status_code";
+    doc["state_topic"] = MQTT_TOPIC_PUB"/statuscode";
+    serializeJson(doc, buffers);
+    client.publish("homeassistant/sensor/tailwind_status_code/config", buffers, true);
+    
+   
+  } else {
+    // publish with empty payload, which will remove HA entities if previously created
+    client.publish("homeassistant/binary_sensor/tailwind_door1/config", "");
+    client.publish("homeassistant/binary_sensor/tailwind_door2/config", "");
+    client.publish("homeassistant/binary_sensor/tailwind_door3/config", "");
+    client.publish("homeassistant/sensor/tailwind_mqtt/config", "");
+    client.publish("homeassistant/sensor/tailwind_lastresult/config", "");
+    client.publish("homeassistant/sensor/tailwind_status_code/config","");
+  }
+  return;
+};
 // ============================================
 //   SETUP
 // ============================================
@@ -217,6 +290,7 @@ void setup() {
   Serial.println("Booting...");
   setup_wifi();
   setup_mqtt();
+  setup_ha_discovery();
   //-----------------------------
   // Setup OTA Updates
   //-----------------------------
@@ -309,51 +383,51 @@ void updateMQTTStatus() {
   switch (curDoorStatus) {
     case 0:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "0", true);
-      client.publish(MQTT_TOPIC_PUB"/door3/state", "off", true);
-      client.publish(MQTT_TOPIC_PUB"/door2/state", "off", true);
-      client.publish(MQTT_TOPIC_PUB"/door1/state", "off", true);
+      client.publish(MQTT_TOPIC_PUB"/door3/state", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/state", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/state", "OFF", true);
       break;
     case 1:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "1", true);
-      client.publish(MQTT_TOPIC_PUB"/door3/state", "off", true);
-      client.publish(MQTT_TOPIC_PUB"/door2/state", "off", true);
-      client.publish(MQTT_TOPIC_PUB"/door1/state", "on", true);
+      client.publish(MQTT_TOPIC_PUB"/door3/state", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/state", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/state", "ON", true);
       break;
     case 2:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "2", true);
-      client.publish(MQTT_TOPIC_PUB"/door3/state", "off", true);
-      client.publish(MQTT_TOPIC_PUB"/door2/state", "on", true);
-      client.publish(MQTT_TOPIC_PUB"/door1/state", "off", true);
+      client.publish(MQTT_TOPIC_PUB"/door3/state", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/state", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/state", "OFF", true);
       break;
     case 3:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "3", true);
-      client.publish(MQTT_TOPIC_PUB"/door3/state", "off", true);
-      client.publish(MQTT_TOPIC_PUB"/door2/state", "on", true);
-      client.publish(MQTT_TOPIC_PUB"/door1/state", "on", true);
+      client.publish(MQTT_TOPIC_PUB"/door3/state", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/state", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/state", "ON", true);
       break;
     case 4:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "4", true);
-      client.publish(MQTT_TOPIC_PUB"/door3/state", "on", true);
-      client.publish(MQTT_TOPIC_PUB"/door2/state", "off", true);
-      client.publish(MQTT_TOPIC_PUB"/door1/state", "off", true);
+      client.publish(MQTT_TOPIC_PUB"/door3/state", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/state", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/state", "OFF", true);
       break;
     case 5:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "5", true);
-      client.publish(MQTT_TOPIC_PUB"/door3/state", "on", true);
-      client.publish(MQTT_TOPIC_PUB"/door2/state", "off", true);
-      client.publish(MQTT_TOPIC_PUB"/door1/state", "on", true);
+      client.publish(MQTT_TOPIC_PUB"/door3/state", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/state", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/state", "ON", true);
       break;
     case 6:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "6", true);
-      client.publish(MQTT_TOPIC_PUB"/door3/state", "on", true);
-      client.publish(MQTT_TOPIC_PUB"/door2/state", "on", true);
-      client.publish(MQTT_TOPIC_PUB"/door1/state", "off", true);
+      client.publish(MQTT_TOPIC_PUB"/door3/state", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/state", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/state", "OFF", true);
       break;
     case 7:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "7", true);
-      client.publish(MQTT_TOPIC_PUB"/door3/state", "on", true);
-      client.publish(MQTT_TOPIC_PUB"/door2/state", "on", true);
-      client.publish(MQTT_TOPIC_PUB"/door1/state", "on", true);
+      client.publish(MQTT_TOPIC_PUB"/door3/state", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/state", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/state", "ON", true);
       break;
     default:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "99", true);
