@@ -13,7 +13,7 @@ Entity Name|Reported Values|
 ```sensor.tailwind_last_status```|OK, FAILED or INVALID|
 ```sensor.tailwind_last_result```|0-7 - Last status code from API|
 
-See the [Wiki](https://github.com/Resinchem/Tailwind2MQTT/wiki/MQTT-%5C-Home-Assistant) for more info on MQTT payloads.
+Note: Any unused doors (not connected) will always return a state of 'Open'. See the [Wiki](https://github.com/Resinchem/Tailwind2MQTT/wiki/MQTT-%5C-Home-Assistant) for more info on MQTT payloads.
 
 **Be sure to update the MQTT topics in these samples:**
 
