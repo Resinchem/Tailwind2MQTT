@@ -1,10 +1,12 @@
 ## Home Asssistant Sample Files
 
-These files are provided as examples on how to issue commands and create state sensors.
+These files are provided as examples on how to issue commands and create state sensors if you wish to create your own entities.
 
-### If you have enabled Home Assistant MQTT Discovery in the settings, you do not need to create the sensors!
-MQTT Discovery will automatically create the following sensors in your Home Assistant upon boot of the bridge:
-Entity Name|Reported Values|
+### If you have enabled Home Assistant MQTT Discovery in the settings, you do not need to create any entities!
+MQTT Discovery will automatically create the following sensors and switches in your Home Assistant upon boot of the bridge:
+
+*Sensors*
+Entity_id|Reported States|
 -----------|---------------|
 ```binary_sensor.tailwind_door1```|Open or Closed|
 ```binary_sensor.tailwind_door2```|Open or Closed|
@@ -13,9 +15,16 @@ Entity Name|Reported Values|
 ```sensor.tailwind_last_status```|OK, FAILED or INVALID|
 ```sensor.tailwind_last_result```|0-7 - Last status code from API|
 
+*Switches*
+Entity_id|Control and State|
+---------|----------|
+```switch.tailwind_door1```|Switch on (open door), switch off (close door)|
+```switch.tailwind_door2```|Switch on (open door), switch off (close door)|
+```switch.tailwind_door3```|Switch on (open door), switch off (close door)|
+
 Note: Any unused doors (not connected) will always return a state of 'Open'. See the [Wiki](https://github.com/Resinchem/Tailwind2MQTT/wiki/MQTT-%5C-Home-Assistant) for more info on MQTT payloads.
 
-**Be sure to update the MQTT topics in these samples:**
+**If you opt to create your own entities, be sure to update the MQTT topics in these samples:**
 
 Replace ```MQTT_TOPIC_PUB``` and ```MQTT_TOPIC_SUB``` with the topics you defined in the Settings.h files.
 
