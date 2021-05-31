@@ -1,6 +1,7 @@
 /*
  * Tailwind MQTT Control and Status
- * Alpha v0.43 - Added Home Assistant MQTT Discovery
+ * Alpha v0.45 - Added additional Home Assistant MQTT Discovery (switches/door control)
+ * Pleaes review setup and install info at https://github.com/Resinchem/Tailwind2MQTT
  */
 
 #include <ESP8266WiFi.h>
@@ -10,15 +11,16 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <PubSubClient.h>
-#include <ArduinoJson.h>          //NEW for v0.43
+#include <ArduinoJson.h>          //NEW for v0.43+
 #include <FS.h>
-#include "Credentials.h"          //File must exist in same folder as .ino.  Edit as needed for project
-#include "Settings.h"             //File must exist in same folder as .ino.  Edit as needed for project
+#include "Credentials.h"          //File must exist in same folder as .ino.  
+#include "Settings.h"             //File must exist in same folder as .ino.  
 
 //GLOBAL VARIABLES
 bool mqttConnected = false;       //Will be enabled if defined and successful connnection made. 
 long lastReconnectAttempt = 0;    //If MQTT connected lost, attempt reconnenct
 unsigned long nextPollTime = 0;
+unsigned long nextSwitchPollTime = 0;
 uint16_t ota_time_elapsed = 0;           // Counter when OTA active
 uint16_t ota_time = ota_boot_time_window;
 const char* APssid = AP_SSID;        
@@ -148,13 +150,13 @@ void reconnect()
 // =============================================================
 void callback(char* topic, byte* payload, unsigned int length) {
   payload[length] = '\0';
-  String message = (char*)payload;      // should contain door number (1, 2, 3)
-  int tailwindParm = message.toInt();   //use integer value for validation/comparison
+  String message = (char*)payload;      // should contain door number (1, 2, 3) or "ON"/"OFF" for discovered switches
   String tailwindCommand;               //string value required for POST
   int validReturnCode = 0;
   bool validCommand = true;
   if (strcmp(topic, MQTT_TOPIC_SUB"/opendoor") == 0) {
-    
+    int tailwindParm = message.toInt();   //use integer value for validation/comparison
+
     //validate payload and convert to API value (door 3)
     if ((tailwindParm == 1) || (tailwindParm == 2)) {
       tailwindCommand = message;
@@ -165,6 +167,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
       validCommand = false;
     }
   } else if (strcmp(topic, MQTT_TOPIC_SUB"/closedoor") == 0) {
+    int tailwindParm = message.toInt();
     //validate payload and convert to API value
      if (tailwindParm == 1) {
         tailwindCommand = "-1";
@@ -177,10 +180,48 @@ void callback(char* topic, byte* payload, unsigned int length) {
        validCommand = false;
      }
   } else if (strcmp(topic, MQTT_TOPIC_SUB"/toggledoor") == 0) {
+    int tailwindParm = message.toInt();
     int curDoorPos = getSingleDoorStatus(tailwindParm);
     tailwindCommand = String(curDoorPos * -1); 
-     
+  /* These topics have to be added for Home Assistant MQTT switch discovery  
+   *   Home Assistant will always pass "OFF" or "ON" as the payload in the command topic
+   *   so it is not possible to pass the door number as the payload.  Therefore, each door
+   *   "switch" must have it's own topic. A delay must be added to allow the operation
+   *   to complete and a status change occurs to prevent switch "bouncing" in HA
+   */
+  } else if (strcmp(topic, MQTT_TOPIC_SUB"/door1/setstate") == 0) {
+    if (message == "ON") {
+      tailwindCommand = "1";
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "ON", true);
+      nextSwitchPollTime = millis() + switch_delay_open;
+    } else {
+      tailwindCommand = "-1";
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "OFF", true);
+      nextSwitchPollTime = millis() + switch_delay_close;
+    }
+  } else if (strcmp(topic, MQTT_TOPIC_SUB"/door2/setstate") == 0) {
+    if (message == "ON") {
+      tailwindCommand = "2";
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "ON", true);
+      nextSwitchPollTime = millis() + switch_delay_open;
+    } else {
+      tailwindCommand = "-2";
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "OFF", true);
+      nextSwitchPollTime = millis() + switch_delay_close;
+    }
+  } else if (strcmp(topic, MQTT_TOPIC_SUB"/door2/setstate") == 0) {
+    if (message == "ON") {
+      tailwindCommand = "4";
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "ON", true);
+      nextSwitchPollTime = millis() + switch_delay_open;
+    } else {
+      tailwindCommand = "-4";
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "OFF", true);
+      nextSwitchPollTime = millis() + switch_delay_close;
+    }
   }
+  
+  
   if (validCommand) {
     validReturnCode = tailwindCommand.toInt();
     //issue curl command
@@ -225,6 +266,9 @@ void setup_ha_discovery() {
     char bufferm[256];
     char bufferl[256];
     char buffers[256];
+    char bufferd1[256];
+    char bufferd2[256];
+    char bufferd3[256];
     StaticJsonDocument<200> doc;
     // Door binary sensor states
     doc["name"] = "tailwind_door1";
@@ -269,7 +313,28 @@ void setup_ha_discovery() {
     serializeJson(doc, buffers);
     client.publish("homeassistant/sensor/tailwind_status_code/config", buffers, true);
     
-   
+   // switches
+   doc.clear();
+   doc["name"] = "tailwind_door1";
+   doc["stat_t"] = MQTT_TOPIC_PUB"/door1/switchstate";
+   doc["cmd_t"] = MQTT_TOPIC_SUB"/door1/setstate";
+   serializeJson(doc, bufferd1);
+   client.publish("homeassistant/switch/tailwind_door1/config", bufferd1, true);   
+
+   doc.clear();
+   doc["name"] = "tailwind_door2";
+   doc["stat_t"] = MQTT_TOPIC_PUB"/door2/switchstate";
+   doc["cmd_t"] = MQTT_TOPIC_SUB"/door2/setstate";
+   serializeJson(doc, bufferd2);
+   client.publish("homeassistant/switch/tailwind_door2/config", bufferd2, true);   
+
+   doc.clear();
+   doc["name"] = "tailwind_door3";
+   doc["stat_t"] = MQTT_TOPIC_PUB"/door3/switchstate";
+   doc["cmd_t"] = MQTT_TOPIC_SUB"/door3/setstate";
+   serializeJson(doc, bufferd3);
+   client.publish("homeassistant/switch/tailwind_door3/config", bufferd3, true);   
+  
   } else {
     // publish with empty payload, which will remove HA entities if previously created
     client.publish("homeassistant/binary_sensor/tailwind_door1/config", "");
@@ -278,6 +343,9 @@ void setup_ha_discovery() {
     client.publish("homeassistant/sensor/tailwind_mqtt/config", "");
     client.publish("homeassistant/sensor/tailwind_lastresult/config", "");
     client.publish("homeassistant/sensor/tailwind_status_code/config","");
+    client.publish("homeassistant/switch/tailwind_door1/config", "");
+    client.publish("homeassistant/switch/tailwind_door2/config", "");
+    client.publish("homeassistant/switch/tailwind_door3/config", "");
   }
   return;
 };
@@ -350,10 +418,15 @@ void loop() {
   if (millis() > nextPollTime) {
     int newDoorStatus;
     newDoorStatus = getDoorStatus();
-    // Only update MQTT if status has changed    
-    if (newDoorStatus != curDoorStatus) {
+    // Only update MQTT if status has changed and updated code is returned   
+    if ((newDoorStatus != curDoorStatus) && (newDoorStatus >= 0) && (newDoorStatus <= 7)) {
       curDoorStatus = newDoorStatus;
       updateMQTTStatus();
+      // Needed to prevent switch "bounce" in HA until operation completes and state updates
+      if (millis() > nextSwitchPollTime) {
+        updateMQTTSwitchStatus();
+        nextSwitchPollTime = 0;
+      }
     }
     nextPollTime = millis() + tailwind_poll;
   }
@@ -428,6 +501,54 @@ void updateMQTTStatus() {
       client.publish(MQTT_TOPIC_PUB"/door3/state", "ON", true);
       client.publish(MQTT_TOPIC_PUB"/door2/state", "ON", true);
       client.publish(MQTT_TOPIC_PUB"/door1/state", "ON", true);
+      break;
+    default:
+      client.publish(MQTT_TOPIC_PUB"/statuscode", "99", true);
+      break;     
+  }
+}
+
+void updateMQTTSwitchStatus() {
+  switch (curDoorStatus) {
+    case 0:
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "OFF", true);
+      break;
+    case 1:
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "ON", true);
+      break;
+    case 2:
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "OFF", true);
+      break;
+    case 3:
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "ON", true);
+      break;
+    case 4:
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "OFF", true);
+      break;
+    case 5:
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "OFF", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "ON", true);
+      break;
+    case 6:
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "OFF", true);
+      break;
+    case 7:
+      client.publish(MQTT_TOPIC_PUB"/door3/switchstate", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door2/switchstate", "ON", true);
+      client.publish(MQTT_TOPIC_PUB"/door1/switchstate", "ON", true);
       break;
     default:
       client.publish(MQTT_TOPIC_PUB"/statuscode", "99", true);
