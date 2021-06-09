@@ -1,6 +1,6 @@
 /*
  * Tailwind MQTT Control and Status
- * Alpha v0.45 - Added additional Home Assistant MQTT Discovery (switches/door control)
+ * Alpha v0.46 - Bug fix for http.begin() obsolete error
  * Pleaes review setup and install info at https://github.com/Resinchem/Tailwind2MQTT
  */
 
@@ -48,6 +48,7 @@ int curDoorStatus = 99;
 WiFiClient espClient;
 PubSubClient client(espClient);    
 ESP8266WebServer server;
+WiFiClient tailwindClient;
 HTTPClient http;
 
 //------------------------------
@@ -225,7 +226,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (validCommand) {
     validReturnCode = tailwindCommand.toInt();
     //issue curl command
-    http.begin(doorCommandURL);
+    http.begin(tailwindClient, doorCommandURL);
     int returnCode = http.POST(tailwindCommand);
     String payloadS = http.getString(); //Get the response payload
     if (returnCode != 200) {
@@ -434,7 +435,7 @@ void loop() {
 
 int getDoorStatus() {
   int retVal = 99;
-  http.begin(doorStatusURL);
+  http.begin(tailwindClient, doorStatusURL);
   int httpCode = http.GET();
   if (httpCode > 0) {
     String payload = http.getString();
