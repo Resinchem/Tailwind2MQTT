@@ -11,6 +11,8 @@ Bridge providing an MQTT interface to Tailwind iQ3 Smart Garage Opener
 
 As with most alpha versions, you should expect frequent and possible breaking changes.  Use at your own risk. It is recommended that you do not rely solely on this bridge for your garage door control and remove or disable the current Tailwind app.  Use care in automations to avoid unplanned door openings.  The author claims no liability for damage to your devices, doors or unintended access to your residence or business via use of the bridge.
 
+**You must have a properly configured MQTT broker for this bridge to work and Home Assistant must be configured to talk to the MQTT broker.
+
 ### Please use the [Discussions](https://github.com/Resinchem/Tailwind2MQTT/discussions) to provide feedback, ideas, feature requests or questions.
 
 This bridge is not officially endorsed nor supported by Tailwind.
