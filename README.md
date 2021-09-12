@@ -2,6 +2,10 @@
 
 Bridge providing an MQTT interface to Tailwind iQ3 Smart Garage Opener
 
+### Update: Tailwind can also be integrated via the HomeKit Controller integration in Home Assistant, whether you have HomeKit or not.
+
+See [Using HomeKit Controller Integration](https://github.com/Resinchem/Tailwind2MQTT/wiki/Using-HomeKit-Controller-Integration) in the wiki for an alternative to using this bridge.
+
 # IMPORTANT:  THIS BRIDGE IS STILL IN ALPHA
 ### *Your Tailwind device must be running the beta firmware v9.87 or later*
 
